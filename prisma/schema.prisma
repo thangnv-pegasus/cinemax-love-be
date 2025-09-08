@@ -7,3 +7,94 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Film {
+ id BigInt @default(autoincrement()) @id
+  name String
+  slug String @unique
+  poster_url String
+  thumb_url String
+  original_name String
+  time Int?
+  total_episodes Int?
+  quality String
+  director String
+  casts String
+  description String
+  country_id BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("films")
+}
+
+
+model Episode {
+  id BigInt @default(autoincrement()) @id
+  name String
+  url String
+  film_id BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("episodes")
+}
+
+model Category {
+  id BigInt @default(autoincrement()) @id
+  name String @unique
+  slug String @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("categories")
+}
+
+model FilmCategory {
+  id BigInt @default(autoincrement()) @id
+  film_id BigInt
+  category_id BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("film_category")
+}
+
+model Country {
+  id BigInt @default(autoincrement()) @id
+  name String
+  slug String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("countries")
+}
+
+model User {
+  id BigInt @default(autoincrement()) @id
+  name String
+  password String
+  email String @unique
+  role Int
+  created_at DateTime
+  updated_at DateTime
+  deleted_at DateTime?
+
+  @@map("users")
+}
+
+model FilmHistory {
+  id BigInt @default(autoincrement()) @id
+  user_id BigInt
+  episode_id BigInt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  deleted_at DateTime?
+
+  @@map("film_histories")
+}
