@@ -9,92 +9,115 @@ datasource db {
 }
 
 model Film {
- id BigInt @default(autoincrement()) @id
-  name String
-  slug String @unique
-  poster_url String
-  thumb_url String
-  original_name String
-  time Int?
+  id             BigInt    @id @default(autoincrement())
+  name           String
+  slug           String    @unique
+  poster_url     String
+  thumb_url      String
+  original_name  String
+  time           Int?
   total_episodes Int?
-  quality String
-  director String
-  casts String
-  description String
-  country_id BigInt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  deleted_at DateTime?
+  quality        String
+  director       String
+  casts          String
+  description    String
+  country_id     BigInt
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  deleted_at     DateTime?
+
+  // relations
+  country        Country        @relation(fields: [country_id], references: [id])
+  episodes       Episode[]
+  filmCategories FilmCategory[]
 
   @@map("films")
 }
 
-
 model Episode {
-  id BigInt @default(autoincrement()) @id
-  name String
-  url String
-  film_id BigInt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  url        String
+  film_id    BigInt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  // relations
+  film           Film          @relation(fields: [film_id], references: [id])
+  film_histories FilmHistory[]
 
   @@map("episodes")
 }
 
 model Category {
-  id BigInt @default(autoincrement()) @id
-  name String @unique
-  slug String @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         BigInt    @id @default(autoincrement())
+  name       String    @unique
+  slug       String    @unique
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  // relations
+  films FilmCategory[]
 
   @@map("categories")
 }
 
 model FilmCategory {
-  id BigInt @default(autoincrement()) @id
-  film_id BigInt
+  id          BigInt    @id @default(autoincrement())
+  film_id     BigInt
   category_id BigInt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  deleted_at DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+
+  // relations
+  category Category @relation(fields: [category_id], references: [id])
+  film     Film     @relation(fields: [film_id], references: [id])
 
   @@map("film_category")
 }
 
 model Country {
-  id BigInt @default(autoincrement()) @id
-  name String
-  slug String
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  slug       String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
+  Film       Film[]
 
   @@map("countries")
 }
 
 model User {
-  id BigInt @default(autoincrement()) @id
-  name String
-  password String
-  email String @unique
-  role Int
+  id         BigInt    @id @default(autoincrement())
+  name       String
+  password   String
+  email      String    @unique
+  role       Int
   created_at DateTime
   updated_at DateTime
   deleted_at DateTime?
+
+  // relations
+  film_histories FilmHistory[]
 
   @@map("users")
 }
 
 model FilmHistory {
-  id BigInt @default(autoincrement()) @id
-  user_id BigInt
+  id         BigInt    @id @default(autoincrement())
+  user_id    BigInt
   episode_id BigInt
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  // relations
+  user    User    @relation(fields: [user_id], references: [id])
+  episode Episode @relation(fields: [episode_id], references: [id])
 
   @@map("film_histories")
 }
