@@ -21,10 +21,12 @@ import { UserModule } from './user/user.module';
 import { FilmHistoryController } from './film-history/film-history.controller';
 import { FilmHistoryService } from './film-history/film-history.service';
 import { FilmHistoryModule } from './film-history/film-history.module';
+import { MegaService } from './mega/mega.service';
+import { MegaModule } from './mega/mega.module';
 
 @Module({
-  imports: [PrismaModule, FilmModule, EpisoleModule, EpisodeModule, CategoryModule, FilmCategoryModule, CountryModule, UserModule, FilmHistoryModule],
+  imports: [PrismaModule, FilmModule, EpisoleModule, EpisodeModule, CategoryModule, FilmCategoryModule, CountryModule, UserModule, FilmHistoryModule, MegaModule],
   controllers: [AppController, EpisodeController, CountryController, FilmHistoryController],
-  providers: [AppService, PrismaService, FilmService, EpisoleService, EpisodeService, CategoryService, FilmCategoryService, CountryService, FilmHistoryService],
+  providers: [AppService, PrismaService, FilmService, EpisoleService, EpisodeService, CategoryService, FilmCategoryService, CountryService, FilmHistoryService, MegaService],
 })
 export class AppModule {}
