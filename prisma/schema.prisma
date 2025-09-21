@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -81,7 +80,7 @@ model FilmCategory {
 
 model Country {
   id         BigInt    @id @default(autoincrement())
-  name       String
+  name       String   @unique
   slug       String
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -116,7 +115,7 @@ model FilmHistory {
   deleted_at DateTime?
 
   // relations
-  user    User    @relation(fields: [user_id], references: [id])
+  user    User?    @relation(fields: [user_id], references: [id])
   episode Episode @relation(fields: [episode_id], references: [id])
 
   @@map("film_histories")
