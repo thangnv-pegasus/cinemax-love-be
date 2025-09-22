@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Film {
-  id             BigInt    @id @default(autoincrement())
+  id             Int    @id @default(autoincrement())
   name           String
   slug           String    @unique
   poster_url     String
@@ -20,7 +20,7 @@ model Film {
   director       String
   casts          String
   description    String
-  country_id     BigInt
+  country_id     Int
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   deleted_at     DateTime?
@@ -34,10 +34,10 @@ model Film {
 }
 
 model Episode {
-  id         BigInt    @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   name       String
   url        String
-  film_id    BigInt
+  film_id    Int
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -50,7 +50,7 @@ model Episode {
 }
 
 model Category {
-  id         BigInt    @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   name       String    @unique
   slug       String    @unique
   created_at DateTime  @default(now())
@@ -64,9 +64,9 @@ model Category {
 }
 
 model FilmCategory {
-  id          BigInt    @id @default(autoincrement())
-  film_id     BigInt
-  category_id BigInt
+  id          Int    @id @default(autoincrement())
+  film_id     Int
+  category_id Int
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
   deleted_at  DateTime?
@@ -79,7 +79,7 @@ model FilmCategory {
 }
 
 model Country {
-  id         BigInt    @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   name       String   @unique
   slug       String
   created_at DateTime  @default(now())
@@ -91,7 +91,7 @@ model Country {
 }
 
 model User {
-  id         BigInt    @id @default(autoincrement())
+  id         Int    @id @default(autoincrement())
   name       String
   password   String
   email      String    @unique
@@ -107,9 +107,9 @@ model User {
 }
 
 model FilmHistory {
-  id         BigInt    @id @default(autoincrement())
-  user_id    BigInt
-  episode_id BigInt
+  id         Int    @id @default(autoincrement())
+  user_id    Int
+  episode_id Int
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
