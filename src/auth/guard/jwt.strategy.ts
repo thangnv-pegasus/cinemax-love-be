@@ -14,7 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // payload chính là data khi sign => { sub, username }
-    return { userId: payload.sub, username: payload.username };
+    // payload là dữ liệu đã được mã hóa trong token
+    return { id: payload.id, username: payload.name, role: payload.role };
   }
 }

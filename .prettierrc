@@ -1,5 +1,7 @@
 {
   "singleQuote": true,
   "trailingComma": "all",
-  "endOfLine": "crlf"
+  "endOfLine": "crlf",
+  "printWidth": 120,
+  "objectWrap": "preserve"
 }
