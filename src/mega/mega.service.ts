@@ -36,17 +36,18 @@ export class MegaService {
 
 
   async uploadFile(
-  buffer: Buffer,
-  filename: string,
-  folderName = 'films',
-): Promise<string> {
-  const folder = await this.getOrCreateFolder(folderName);
-  const file = await new Promise<File>((resolve, reject) => {
-    const uploadStream = folder.upload(filename, buffer);
-    uploadStream.on('complete', resolve);
-    uploadStream.on('error', reject);
-  });
-  return file.link(true);
-}
-
+    buffer: Buffer,
+    filename: string,
+    folderName = 'films',
+  ): Promise<string> {
+    console.log('>>> uploadFile >>> ', { filename, folderName });
+    const folder = await this.getOrCreateFolder(folderName);
+    const file = await new Promise<File>((resolve, reject) => {
+      const uploadStream = folder.upload(filename, buffer);
+      uploadStream.on('complete', resolve);
+      uploadStream.on('error', reject);
+    });
+    console.log('>>> Uploaded to MEGA: ', file);
+    return file.link({noKey: false});
+  }
 }

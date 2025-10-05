@@ -11,15 +11,16 @@ model Film {
   id             Int    @id @default(autoincrement())
   name           String
   slug           String    @unique
-  poster_url     String
-  thumb_url      String
+  poster_url     String?
+  thumb_url      String?
   original_name  String
-  time           Int?
+  time           String?
   total_episodes Int?
   quality        String
   director       String
   casts          String
   description    String
+  type           Int @default(0)  // 0: series, 1: movie
   country_id     Int
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt

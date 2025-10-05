@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "films" ALTER COLUMN "time" SET DATA TYPE TEXT;

@@ -1,4 +1,4 @@
-import { slugify } from "../../src/common/helpers/generate-data"
+import { slugifyCustom } from "@/common/helpers/generate-data"
 import { PrismaClient } from "@prisma/client"
 
 export async function seedCountries(prisma: PrismaClient) { 
@@ -59,7 +59,7 @@ export async function seedCountries(prisma: PrismaClient) {
       update: {},
       create: {
         name: c.name,
-        slug: slugify(c.name),
+        slug: slugifyCustom(c.name, { lower: true, strict: true, locale: "vi" }),
       },
     })
   }
