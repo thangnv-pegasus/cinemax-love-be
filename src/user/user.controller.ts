@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Request, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Request, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
 import { IUserInfo } from './interface/user';
 import { UserInterceptor } from './interceptor/user.interceptor';
 import { UserService } from './user.service';
@@ -17,11 +17,10 @@ export class UserController {
   @Get('me')  
   @UseInterceptors(UserInterceptor)
   async getUserInfo(@Request() req): Promise<IUserInfo> {
-    const user = await this.userService.findById(req.user.id);
-    if (!user) {
-      throw new Error('User not found');
+    if (!req.session.user) {
+      throw new UnauthorizedException('User not logged in');
     }
-    return user;
+    return req.session.user;
   }
 
   @Get('all')

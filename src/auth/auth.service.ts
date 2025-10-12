@@ -1,8 +1,7 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Request, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '@/user/user.service';
 import { PrismaService } from '@/prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
 import { IUserRegister } from '@/user/interface/user';
 
 @Injectable()
@@ -17,11 +16,25 @@ export class AuthService {
     const user = await this.userService.findByEmail(email);
     if (!user) return null;
     const isMatch = await this.userService.validatePassword(password, user.password);
-    return isMatch ? { id: user.id, email: user.email, role: user.id } : null;
+    return isMatch ? {id: user.id, email: user.email, name: user.name, role: user.role} : null;
   }
 
-  async login(user: { id: number; email: string, role: number }) {
-    return { access_token: this.jwtService.sign(user) };
+  async login(user: { id: number; email: string; name: string; role: number }, req: any) {
+    req.session.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+    return { 
+      access_token: this.jwtService.sign(user), 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      }
+    };
   }
 
   async register(body: IUserRegister) {
@@ -36,5 +49,8 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async logout() {
   }
 }
