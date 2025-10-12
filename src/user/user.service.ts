@@ -60,7 +60,7 @@ export class UserService {
     ]);
     return {
       total,
-      page,
+      page: +page,
       limit,
       items
     };
