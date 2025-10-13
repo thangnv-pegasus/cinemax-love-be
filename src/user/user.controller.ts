@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Request, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Query, Request, Search, UnauthorizedException, UseGuards, UseInterceptors } from '@nestjs/common';
 import { IUserInfo } from './interface/user';
 import { UserInterceptor } from './interceptor/user.interceptor';
 import { UserService } from './user.service';
@@ -33,8 +33,8 @@ export class UserController {
   @Get()
   @Role(ROLE.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
-  async getList(dto: UserListDto) {
-    return this.userService.findList(dto.page, dto.limit, dto.search);
+  async getList(@Query('page', ParseIntPipe) page = 1, @Query('limit', ParseIntPipe) limit = 12, @Query('search') search = '') {
+    return this.userService.findList(page, limit, search);
   }
 
   @Patch(':id')
