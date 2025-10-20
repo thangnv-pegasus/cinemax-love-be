@@ -3,7 +3,6 @@ import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Query, Reque
 import { IUserInfo } from './interface/user';
 import { UserInterceptor } from './interceptor/user.interceptor';
 import { UserService } from './user.service';
-import { UserListDto } from './dto/user-list.dto';
 import { Role } from '@/auth/decorators/role.decorator';
 import { ROLE } from '@/common/constants/user';
 import { RoleGuard } from '@/auth/guard/role-guard.guard';

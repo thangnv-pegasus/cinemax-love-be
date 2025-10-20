@@ -1,4 +1,3 @@
-import { ROLE } from '@/common/constants/user';
 import { PrismaClient } from '@prisma/client'
 import * as bcrypt from 'bcrypt'
 
