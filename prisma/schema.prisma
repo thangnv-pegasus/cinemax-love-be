@@ -17,21 +17,21 @@ model Film {
   time           String?
   total_episodes Int?
   quality        String
-  director       String
-  casts          String
+  director       String?
+  casts          String?
   description    String
   type           Int @default(0)  // 0: series, 1: movie
-  country_id     Int
   created_at     DateTime  @default(now())
   updated_at     DateTime  @updatedAt
   deleted_at     DateTime?
 
   // relations
-  country        Country        @relation(fields: [country_id], references: [id])
   episodes       Episode[]
   filmCategories FilmCategory[]
 
   @@map("films")
+  Country Country[]
+  country_film CountryFilm[] @relation(name: "film-country")
 }
 
 model Episode {
@@ -89,6 +89,19 @@ model Country {
   Film       Film[]
 
   @@map("countries")
+  country_film CountryFilm[]
+}
+
+model CountryFilm {
+  id  Int @id @default(autoincrement())
+  film_id Int
+  country_id  Int
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+
+  films Film @relation(name: "film-country", fields: [film_id], references: [id])
+  country Country @relation(fields: [country_id], references: [id])
 }
 
 model User {

@@ -1,4 +1,4 @@
-import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, ParseIntPipe, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilmService } from './film.service';
 import { UploadFilmDto } from './dto/upload.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
@@ -49,10 +49,7 @@ export class FilmController {
     return this.filmService.create(body, files);
   }
 
-  @Get(':id')
-  async getByCategory(@Param('id') id: number) {
-    return this.filmService.findById(id);
-  }
+  
 
   @Get('/find-by-category/:categorySlug')
   async getByCategorySlug(@Param('categorySlug') categorySlug: string, @Query() query: { page?: number, limit?: number }) {
@@ -67,5 +64,20 @@ export class FilmController {
   @Get('suggestion')
   async getSuggestion(@Req() req) {
     return this.filmService.getSuggestion(req?.user?.id);
+  }
+
+  @Get('phim-bo')
+  async getPhimBo(@Query('page', ParseIntPipe) page: number, @Query('limit', ParseIntPipe) limit: number) {
+    return this.filmService.getFilmSeries(page, limit);
+  }
+
+  @Get('phim-le')
+  async getFilmMovie(@Query('page', ParseIntPipe) page: number, @Query('limit', ParseIntPipe) limit: number) {
+    return this.filmService.getFilmSingle(page, limit);
+  }
+
+  @Get(':id')
+  async getByCategory(@Param('id', ParseIntPipe) id: number) {
+    return this.filmService.findById(id);
   }
 }

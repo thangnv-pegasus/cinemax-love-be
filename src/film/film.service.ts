@@ -3,10 +3,13 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { CreateFilmDto } from './dto/create-update.dto';
 import slugify from 'slugify';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
+import { FILM_TYPE } from '@/common/constants/film';
 
 @Injectable()
 export class FilmService {
-  constructor(private prisma: PrismaService, private mega: MegaService) { }
+  constructor(private prisma: PrismaService, private mega: MegaService, private readonly httpService: HttpService,) { }
 
   async uploadFilmVideo(buffer: Buffer, filename: string, folderNamme = 'films'): Promise<string> {
     return this.mega.uploadFile(buffer, filename, folderNamme);
@@ -44,10 +47,16 @@ export class FilmService {
           quality: data.quality,
           director: data.director,
           casts: data.casts,
-          country_id: data.country_id,
           type: data.type,
         }
       });
+
+      const country = await this.prisma.countryFilm.create({
+        data: {
+          film_id: film.id,
+          country_id: data.country_id
+        }
+      })
 
       await prisma.filmCategory.createMany({
         data: data.category_ids.map((category_id) => ({
@@ -74,10 +83,10 @@ export class FilmService {
   }
 
   async findById(id: number) {
-    return this.prisma.film.findUnique({
+    return this.prisma.film.findFirst({
       where: { id },
       include: {
-        country: true,
+        // country: true,
         filmCategories: {
           include: {
             category: true,
@@ -88,6 +97,11 @@ export class FilmService {
             created_at: 'asc',
           },
           take: 1,
+        },
+        country_film: {
+          include: {
+            country: true,
+          }
         },
       },
     });
@@ -109,7 +123,7 @@ export class FilmService {
           },
         },
         include: {
-          country: true,
+          // country: true,
           filmCategories: {
             include: {
               category: true,
@@ -121,6 +135,11 @@ export class FilmService {
             },
             take: 1,
           },
+          country_film: {
+            include: {
+              country: true,
+            }
+          }
         },
         skip: offset,
         take: limit,
@@ -167,7 +186,6 @@ export class FilmService {
       this.prisma.film.findMany({
         where,
         include: {
-          country: true,
           filmCategories: {
             include: {
               category: true,
@@ -179,6 +197,11 @@ export class FilmService {
             },
             take: 1,
           },
+          country_film: {
+            include: {
+              country: true,
+            }
+          }
         },
         skip: offset,
 
@@ -202,16 +225,16 @@ export class FilmService {
   async getSuggestion(user_id?: number) {
     // Define shared include & orderBy config
     const filmInclude = {
-      country: true,
+      // country: true,
       filmCategories: {
         include: {
           category: true,
         },
       },
-      episodes: {
-        orderBy: { created_at: 'asc' as const },
-        take: 1,
-      },
+      // episodes: {
+      //   orderBy: { created_at: 'asc' as const },
+      //   take: 1,
+      // },
     };
     const filmOrder = { created_at: 'desc' as const };
     // Default query condition (nếu không có user hoặc không có gợi ý)
@@ -242,6 +265,133 @@ export class FilmService {
     });
   }
 
+  async fetchAndStoreFilms(categorySlug: string, page = 1) {
+    const url = `${process.env.PHIM_NGUON_API_URL}/films/the-loai/${categorySlug}?page=${page}`;
+    const { data } = await firstValueFrom(this.httpService.get(url, { timeout: 20000 }));
+
+    if (data.status !== 'success' || !Array.isArray(data.items)) {
+      throw new Error('API response invalid');
+    }
+
+    console.log(">>> data api >>>", data)
+
+    const categories = await this.prisma.category.findMany({})
+
+    for (const item of data.items) {
+      const film = await this.prisma.film.upsert({
+        where: { slug: item.slug },
+        update: {
+          name: item.name,
+          original_name: item.original_name,
+          thumb_url: item.thumb_url,
+          poster_url: item.poster_url,
+          description: item.description,
+          total_episodes: item.total_episodes,
+          time: item.time,
+          quality: item.quality,
+          director: item.director,
+          casts: item.casts,
+          type: categorySlug === 'phim-le' ? FILM_TYPE.MOVIE : FILM_TYPE.SERIES
+        },
+        create: {
+          slug: item.slug,
+          name: item.name,
+          original_name: item.original_name,
+          thumb_url: item.thumb_url,
+          poster_url: item.poster_url,
+          description: item.description,
+          total_episodes: item.total_episodes,
+          time: item.time,
+          quality: item.quality,
+          director: item.director,
+          casts: item.casts,
+          type: categorySlug === 'phim-le' ? FILM_TYPE.MOVIE : FILM_TYPE.SERIES
+        },
+      });
+      const categoryTarget = categories.find(item => item.slug === categorySlug);
+      if (categoryTarget) {
+        await this.prisma.filmCategory.create({
+          data: {
+            film_id: film.id,
+            category_id: categoryTarget.id
+          }
+        })
+      }
+
+      const detailUrl = `${process.env.PHIM_NGUON_API_URL}/film/${item.slug}`;
+      const res = await firstValueFrom(this.httpService.get(detailUrl));
+      const detailData = res.data
+
+      if (detailData.status === 'success' && detailData.movie?.episodes?.length) {
+        const episodes = detailData.movie.episodes.flatMap((server: any) =>
+          server.items.map((ep: any) => ({
+            film_id: film.id,
+            name: ep.name,
+            url: ep.embed,
+          }))
+        );
+
+        await this.prisma.episode.deleteMany({ where: { film_id: film.id } });
+        await this.prisma.episode.createMany({ data: episodes });
+      }
+    }
+
+    return { message: 'Data imported successfully' };
+  }
+
+  async getFilmSeries(page = 1, limit = 10) {
+    // B1: Lấy tất cả phim có nhiều tập
+    const allFilms = await this.prisma.film.findMany({
+      include: {
+        _count: { select: { episodes: true } },
+      },
+      orderBy: { id: 'desc' },
+    });
+
+    // B2: Lọc phim bộ
+    const series = allFilms.filter(f => f._count.episodes > 1);
+
+    // B3: Phân trang thủ công
+    const total = series.length;
+    const start = (page - 1) * limit;
+    const data = series.slice(start, start + limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        last_page: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getFilmSingle(page = 1, limit = 10) {
+    // B1: Lấy toàn bộ phim + đếm số tập
+    const allFilms = await this.prisma.film.findMany({
+      include: {
+        _count: { select: { episodes: true } },
+      },
+      orderBy: { id: 'desc' },
+    });
+
+    // B2: Lọc phim lẻ (chỉ có 1 tập hoặc chưa có tập nào)
+    const singles = allFilms.filter(f => f._count.episodes <= 1);
+
+    // B3: Phân trang
+    const total = singles.length;
+    const start = (page - 1) * limit;
+    const data = singles.slice(start, start + limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        last_page: Math.ceil(total / limit),
+      },
+    };
+  }
 
   private async generateSlug(name: string): Promise<string> {
     let slug = slugify(name, {

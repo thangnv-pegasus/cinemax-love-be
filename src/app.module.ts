@@ -10,10 +10,23 @@ import { UserModule } from './user/user.module';
 import { FilmHistoryModule } from './film-history/film-history.module';
 import { MegaModule } from './mega/mega.module';
 import { AuthModule } from './auth/auth.module';
+import { CommandRunnerModule } from 'nest-commander';
+import { FetchFilmsCommand } from './commands/seed-film';
 
 @Module({
-  imports: [PrismaModule, FilmModule, EpisodeModule, CategoryModule, FilmCategoryModule, CountryModule, UserModule, FilmHistoryModule, MegaModule, AuthModule],
+  imports: [PrismaModule,
+    FilmModule,
+    EpisodeModule,
+    CategoryModule,
+    FilmCategoryModule,
+    CountryModule,
+    UserModule,
+    FilmHistoryModule,
+    MegaModule,
+    AuthModule,
+    CommandRunnerModule
+  ],
   controllers: [],
-  providers: [AppService],
+  providers: [AppService, FetchFilmsCommand],
 })
 export class AppModule { }
