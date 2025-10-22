@@ -152,7 +152,6 @@ export class FilmService {
           filmCategories: {
             some: {
               category: {
-
                 slug: categorySlug,
               },
             },
@@ -391,6 +390,85 @@ export class FilmService {
         last_page: Math.ceil(total / limit),
       },
     };
+  }
+
+  async getTrending(page = 1, limit = 10) {
+    // 1) Lấy tất cả phim (hoặc có thể giới hạn nếu DB rất lớn, xem note)
+    const films = await this.prisma.film.findMany({
+      include: {
+        // lấy episodes và _count lượt xem trên từng episode
+        episodes: {
+          include: {
+            _count: {
+              select: { film_histories: true } // ✅ đúng: _count bên trong episode
+            }
+          }
+        },
+        // bạn vẫn có thể yêu cầu _count.episodes nếu cần số tập
+        _count: {
+          select: { episodes: true }
+        }
+      },
+      orderBy: { id: 'desc' } // order lấy ra, sau đó ta sẽ sắp theo totalViews
+    });
+
+    // 2) Tính tổng lượt xem cho mỗi phim
+    const filmsWithViews = films.map(f => ({
+      ...f,
+      totalViews: f.episodes.reduce((sum, ep) => sum + (ep._count?.film_histories ?? 0), 0)
+    }));
+
+    // 3) Sắp giảm dần theo totalViews
+    filmsWithViews.sort((a, b) => b.totalViews - a.totalViews);
+
+    // 4) Phân trang *sau* khi đã sắp
+    const total = filmsWithViews.length;
+    const start = (page - 1) * limit;
+    const data = filmsWithViews.slice(start, start + limit);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        per_page: limit,
+        last_page: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findBySlug(slug: string) {
+    return this.prisma.film.findFirst({
+      where: {
+        slug
+      },
+      include: {
+        country_film: {
+          select: {
+            country: {
+              select: {
+                name: true,
+                id: true,
+                slug: true,
+              }
+            }
+          }
+        },
+        episodes: true,
+        filmCategories: {
+          select: {
+            id: true,
+            category: {
+              select: {
+                name: true,
+                id: true,
+                slug: true,
+              }
+            }
+          }
+        }
+      }
+    })
   }
 
   private async generateSlug(name: string): Promise<string> {

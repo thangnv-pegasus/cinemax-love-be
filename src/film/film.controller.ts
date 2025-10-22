@@ -57,8 +57,13 @@ export class FilmController {
   }
 
   @Get()
-  async getAll(@Query() query: { page?: number, limit?: number, search?: string }) {
-    return this.filmService.findAll(query);
+  async getAll(@Query('page', ParseIntPipe) page?: number,@Query('limit', ParseIntPipe) limit?: number,@Query('search') search?: string) {
+    return this.filmService.findAll({page, limit, search});
+  }
+
+  @Get('trending')
+  async getTrending(@Query('page', ParseIntPipe) page = 1, @Query('limit', ParseIntPipe) limit = 10) {
+    return this.filmService.getTrending(page, limit);
   }
 
   @Get('suggestion')
@@ -79,5 +84,10 @@ export class FilmController {
   @Get(':id')
   async getByCategory(@Param('id', ParseIntPipe) id: number) {
     return this.filmService.findById(id);
+  }
+
+  @Get('slug/:slug')
+  async findBySlug(@Param('slug') slug: string) {
+    return this.filmService.findBySlug(slug);
   }
 }
