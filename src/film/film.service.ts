@@ -169,7 +169,7 @@ export class FilmService {
     };
   }
 
-  async findAll(query: { page?: number, limit?: number, search?: string }) {
+  async findAll(query: { page?: number, limit?: number, search?: string}) {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const offset = (page - 1) * limit;

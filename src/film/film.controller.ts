@@ -56,7 +56,7 @@ export class FilmController {
     return this.filmService.findByCategorySlug(categorySlug, query);
   }
 
-  @Get()
+  @Get('')
   async getAll(@Query('page', ParseIntPipe) page?: number,@Query('limit', ParseIntPipe) limit?: number,@Query('search') search?: string) {
     return this.filmService.findAll({page, limit, search});
   }

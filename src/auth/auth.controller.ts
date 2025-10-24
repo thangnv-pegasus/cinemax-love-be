@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, UseInterceptors, Req, InternalServerErrorException } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, UseInterceptors, Req, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -19,6 +19,13 @@ export class AuthController {
   @Post('register')
   @UseInterceptors(UserInterceptor)
   async register(@Body() dto: RegisterDto) {
+    if(dto.password.trim() !== dto.confirm_password.trim()) {
+      throw new BadRequestException({
+      statusCode: 400,
+      message: 'Mật khẩu và xác nhận mật khẩu không khớp',
+      error: 'Bad Request',
+    });
+    }
     return this.authService.register(dto);
   }
 

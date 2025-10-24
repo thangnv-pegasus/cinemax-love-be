@@ -130,7 +130,7 @@ model FilmHistory {
 
   // relations
   user    User?    @relation(fields: [user_id], references: [id])
-  episode Episode @relation(fields: [episode_id], references: [id])
+  episode Episode? @relation(fields: [episode_id], references: [id])
 
   @@map("film_histories")
 }

@@ -21,4 +21,13 @@ export class FilmHistoryService {
       take: query.limit && query.limit > 0 ? query.limit : 10,
     });
   }
+
+  async addHistory(userId: number, episodeId: number) {
+    return this.prisma.filmHistory.create({
+      data: {
+        episode_id: episodeId,
+        user_id: userId
+      }
+    })
+  }
 }

@@ -1,5 +1,5 @@
 import { ROLE } from "@/common/constants/user";
-import { IsNumber, IsString, Length, Max, MaxLength, Min, MinLength } from "class-validator";
+import { Equals, IsNumber, IsString, Length, Max, MaxLength, Min, MinLength } from "class-validator";
 
 export class RegisterDto {
   @IsString()
@@ -12,6 +12,11 @@ export class RegisterDto {
   @MinLength(6)
   @MaxLength(20)
   password: string;
+
+  @IsString()
+  @MinLength(6)
+  @MaxLength(20)
+  confirm_password: string;
 
   @IsNumber()
   @Min(0)
