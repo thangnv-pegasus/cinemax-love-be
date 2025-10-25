@@ -1,4 +1,4 @@
-import { Body, Controller, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, ParseIntPipe, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, FileTypeValidator, Get, MaxFileSizeValidator, Param, ParseFilePipe, ParseIntPipe, Patch, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilmService } from './film.service';
 import { UploadFilmDto } from './dto/upload.dto';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
@@ -49,7 +49,16 @@ export class FilmController {
     return this.filmService.create(body, files);
   }
 
-  
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Role(ROLE.ADMIN)
+  async updateFilm(@Param('id', ParseIntPipe) id: number, @Body() payload: Partial<CreateFilmDto>, @UploadedFiles() files?: {
+    thumbnail?: Express.Multer.File[];
+    poster?: Express.Multer.File[];
+    episodes?: Express.Multer.File[];
+  }) {
+    return this.filmService.update(id, payload, files);
+  }
 
   @Get('/find-by-category/:categorySlug')
   async getByCategorySlug(@Param('categorySlug') categorySlug: string, @Query() query: { page?: number, limit?: number }) {
@@ -57,8 +66,8 @@ export class FilmController {
   }
 
   @Get('')
-  async getAll(@Query('page', ParseIntPipe) page?: number,@Query('limit', ParseIntPipe) limit?: number,@Query('search') search?: string) {
-    return this.filmService.findAll({page, limit, search});
+  async getAll(@Query('page', ParseIntPipe) page?: number, @Query('limit', ParseIntPipe) limit?: number, @Query('search') search?: string) {
+    return this.filmService.findAll({ page, limit, search });
   }
 
   @Get('trending')
@@ -89,5 +98,12 @@ export class FilmController {
   @Get('slug/:slug')
   async findBySlug(@Param('slug') slug: string) {
     return this.filmService.findBySlug(slug);
+  }
+
+  @Delete(':filmId')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Role(ROLE.ADMIN)
+  async deleteFilm(@Param('filmId', ParseIntPipe) filmId: number) {
+    return this.filmService.delete(filmId);
   }
 }

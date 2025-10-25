@@ -20,7 +20,7 @@ async function bootstrap() {
     }),);
     app.use(
     session({
-      secret: 'fdsafdsaf', // nên để trong .env
+      secret: process.env.JWT_SECRET, // nên để trong .env
       resave: false,
       saveUninitialized: false,
       cookie: {

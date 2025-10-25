@@ -1,5 +1,19 @@
 import { Type } from "class-transformer";
-import { IsArray, IsNumber, IsOptional, IsString } from "class-validator";
+import {
+  IsArray,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from "class-validator";
+
+class EpisodeDto {
+  @IsString()
+  source: string;
+
+  @IsString()
+  source_type: string;
+}
 
 export class CreateFilmDto {
   @IsString()
@@ -24,21 +38,34 @@ export class CreateFilmDto {
   @Type(() => Number)
   type: number;
 
+  @IsOptional()
   @IsNumber()
-  @IsOptional()
-  total_episodes: number;
+  @Type(() => Number)
+  total_episodes?: number;
 
-  @IsString()
   @IsOptional()
-  time: string;
+  @IsString()
+  time?: string;
 
   @IsNumber()
   @Type(() => Number)
   country_id: number;
 
-  @IsNumber({}, { each: true })
   @IsArray()
   @Type(() => Number)
-  category_ids: number[];  
+  @IsNumber({}, { each: true })
+  category_ids: number[];
 
+  @IsOptional()
+  @IsString()
+  thumbnail?: string;
+
+  @IsOptional()
+  @IsString()
+  poster?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EpisodeDto)
+  episodes: EpisodeDto[];
 }
