@@ -52,7 +52,14 @@ export class FilmController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Role(ROLE.ADMIN)
-  async updateFilm(@Param('id', ParseIntPipe) id: number, @Body() payload: Partial<CreateFilmDto>, @UploadedFiles() files?: {
+   @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'thumbnail', maxCount: 1 },
+      { name: 'poster', maxCount: 1 },
+      { name: 'episodes', maxCount: 10 },
+    ]),
+  )
+  async updateFilm(@Param('id', ParseIntPipe) id: number, @Body() payload: Partial<CreateFilmDto>, @UploadedFiles() files: {
     thumbnail?: Express.Multer.File[];
     poster?: Express.Multer.File[];
     episodes?: Express.Multer.File[];

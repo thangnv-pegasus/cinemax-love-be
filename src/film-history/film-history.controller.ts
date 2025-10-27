@@ -8,7 +8,7 @@ export class FilmHistoryController {
   constructor(private filmHistoryService: FilmHistoryService) { }
 
   @Get()
-  async getHistory(@Query() query: { page?: number, limit?: number }) {
+  async getHistory(@Query() query: { page?: number, limit?: number, search?: string }) {
     return this.filmHistoryService.getHistory(query);
   }
 

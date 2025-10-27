@@ -4,8 +4,9 @@ import { Injectable } from '@nestjs/common';
 import { CreateFilmDto } from './dto/create-update.dto';
 import slugify from 'slugify';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { FILM_TYPE } from '@/common/constants/film';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class FilmService {
@@ -30,8 +31,8 @@ export class FilmService {
           ? await this.mega.uploadFile(
             files.thumbnail[0].buffer,
             files.thumbnail[0].originalname,
-            'films/thumbnails'
-          )
+            'thumbnails'
+          ).then(res => res)
           : typeof data.thumbnail === 'string' && data.thumbnail.trim() !== ''
             ? data.thumbnail
             : null;
@@ -42,7 +43,7 @@ export class FilmService {
           ? await this.mega.uploadFile(
             files.poster[0].buffer,
             files.poster[0].originalname,
-            'films/posters'
+            'posters'
           )
           : typeof data.poster === 'string' && data.poster.trim() !== ''
             ? data.poster
@@ -105,6 +106,8 @@ export class FilmService {
       });
 
       return film;
+    }, {
+      timeout: 200000
     });
 
     return film;
@@ -113,7 +116,7 @@ export class FilmService {
   async update(
     id: number,
     data: Partial<CreateFilmDto>,
-    files?: {
+    files: {
       thumbnail?: Express.Multer.File[];
       poster?: Express.Multer.File[];
       episodes?: Express.Multer.File[];
@@ -135,10 +138,8 @@ export class FilmService {
             files.thumbnail[0].originalname,
             'films/thumbnails'
           )
-          : data.thumbnail ?? data.thumbnail ?? existingFilm.thumb_url;
+          : data.thumbnail ?? existingFilm.thumb_url;
 
-
-      // ✅ Upload poster (nếu có)
       const poster_url =
         files?.poster && files.poster[0]?.buffer
           ? await this.mega.uploadFile(
@@ -175,7 +176,7 @@ export class FilmService {
           quality: data.quality ?? existingFilm.quality,
           director: data.director ?? existingFilm.director,
           casts: data.casts ?? existingFilm.casts,
-          type: data.type ?? existingFilm.type,
+          type: Number(data.type) ?? existingFilm.type,
         },
       });
 
@@ -201,13 +202,29 @@ export class FilmService {
         });
       }
 
-      // ✅ Cập nhật tập phim (nếu có)
-      if (finalEpisodeUrls.length) {
-        await prisma.episode.deleteMany({ where: { film_id: id } });
+      const existingEpisodes = await prisma.episode.findMany({
+        where: { film_id: id },
+      });
+
+      const existingUrls = existingEpisodes.map(e => e.url);
+
+      // Tập cần thêm mới
+      const newUrls = finalEpisodeUrls.filter(url => !existingUrls.includes(url));
+
+      // Tập cần xóa (nếu có)
+      const toDelete = existingEpisodes.filter(e => !finalEpisodeUrls.includes(e.url));
+
+      if (toDelete.length) {
+        await prisma.episode.deleteMany({
+          where: { id: { in: toDelete.map(e => e.id) } },
+        });
+      }
+
+      if (newUrls.length) {
         await prisma.episode.createMany({
-          data: finalEpisodeUrls.map((url, index) => ({
+          data: newUrls.map((url, index) => ({
             film_id: id,
-            name: `Tập ${index + 1}`,
+            name: `Tập ${existingEpisodes.length + index + 1}`,
             url,
           })),
         });
@@ -216,8 +233,6 @@ export class FilmService {
       return updatedFilm;
     });
   }
-
-
 
   async findById(id: number) {
     return this.prisma.film.findFirst({
@@ -311,15 +326,16 @@ export class FilmService {
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 10;
     const offset = (page - 1) * limit;
-    const where = query.search ? {
-      OR: [
-        { name: { contains: query.search } },
-        { original_name: { contains: query.search } },
-        { director: { contains: query.search } },
-        { casts: { contains: query.search } },
-      ],
+    const filters = [
+      { name: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+      { original_name: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+      { director: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+      { casts: { contains: query.search, mode: Prisma.QueryMode.insensitive } },
+    ];
+    const where = {
       deleted_at: null,
-    } : { deleted_at: null };
+      ...(query.search ? { OR: filters } : { }),
+    };
     const [films, total] = await this.prisma.$transaction([
       this.prisma.film.findMany({
         where,
@@ -333,7 +349,6 @@ export class FilmService {
             orderBy: {
               created_at: 'asc',
             },
-            take: 1,
           },
           country_film: {
             include: {
@@ -342,7 +357,6 @@ export class FilmService {
           }
         },
         skip: offset,
-
         take: limit,
         orderBy: {
           created_at: 'desc',
@@ -405,7 +419,7 @@ export class FilmService {
 
   async fetchAndStoreFilms(categorySlug: string, page = 1) {
     const url = `${process.env.PHIM_NGUON_API_URL}/films/the-loai/${categorySlug}?page=${page}`;
-    const { data } = await firstValueFrom(this.httpService.get(url, { timeout: 20000 }));
+    const { data } = await firstValueFrom(this.httpService.get(url, { timeout: 200000 }));
 
     if (data.status !== 'success' || !Array.isArray(data.items)) {
       throw new Error('API response invalid');

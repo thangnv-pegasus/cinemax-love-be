@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
-import { Storage, File, MutableFile } from 'megajs';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Storage, File as MegaFile, MutableFile } from 'megajs';
 import * as fs from 'fs';
 
 @Injectable()
-export class MegaService {
+export class MegaService implements OnModuleInit {
   private storage: Storage;
+  private ready = false;
 
   constructor() {
     this.storage = new Storage(
@@ -19,35 +20,90 @@ export class MegaService {
     );
   }
 
+  async onModuleInit() {
+    await this.storage.ready;
+    this.ready = true;
+    console.log('MEGA ready');
+  }
+
+  private async ensureReady() {
+    if (!this.ready) {
+      await this.storage.ready;
+      this.ready = true;
+    }
+  }
+
   private async getOrCreateFolder(folderName: string): Promise<MutableFile> {
-    return new Promise((resolve, reject) => {
-      const folder = this.storage.find(
-        (child) => child.name === folderName && child.directory,
-      ) as MutableFile | undefined;
+    await this.ensureReady();
 
-      if (folder) return resolve(folder);
+    // Lấy folder từ root.children, đảm bảo children không undefined
+    const rootChildren = this.storage.root.children || [];
+    let folder = rootChildren.find(
+      (c) => c.directory && c.name === folderName,
+    ) as MutableFile | undefined;
 
-      this.storage.mkdir({ name: folderName }, (err, createdFolder) => {
+    if (folder) return folder;
+
+    // Nếu chưa có thì tạo mới
+    return new Promise<MutableFile>((resolve, reject) => {
+      this.storage.root.mkdir({ name: folderName }, (err, created) => {
         if (err) return reject(err);
-        resolve(createdFolder as MutableFile);
+        resolve(created as MutableFile);
       });
     });
   }
 
+  private exportFileAsPublicLink(file: MegaFile): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      try {
+        const res = (file as any).export?.();
+        if (res && typeof res.then === 'function') {
+          return res.then(resolve).catch(reject);
+        }
+        (file as any).export((err: any, link: string) => {
+          if (err) return reject(err);
+          resolve(link);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
 
+  /**
+   * Upload single file (Buffer) → return public link
+   */
   async uploadFile(
     buffer: Buffer,
     filename: string,
     folderName = 'films',
   ): Promise<string> {
-    console.log('>>> uploadFile >>> ', { filename, folderName });
     const folder = await this.getOrCreateFolder(folderName);
-    const file = await new Promise<File>((resolve, reject) => {
+
+    // Upload file
+    const file = await new Promise<MegaFile>((resolve, reject) => {
       const uploadStream = folder.upload(filename, buffer);
       uploadStream.on('complete', resolve);
       uploadStream.on('error', reject);
     });
-    console.log('>>> Uploaded to MEGA: ', file);
-    return file.link({noKey: false});
+
+    // Lấy public link ngay
+    const publicLink = file.link({ noKey: false });
+    console.log('>>> Public link: ', await publicLink);
+
+    return publicLink;
+  }
+
+
+  /**
+   * Upload nhiều file cùng lúc → return array public links
+   */
+  async uploadFiles(
+    files: { buffer: Buffer; filename: string }[],
+    folderName = 'films',
+  ): Promise<string[]> {
+    // Upload song song
+    const promises = files.map((f) => this.uploadFile(f.buffer, f.filename, folderName));
+    return Promise.all(promises);
   }
 }

@@ -4,19 +4,65 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class FilmHistoryService {
   constructor(private prisma: PrismaService) { }
-  async getHistory(query: { page?: number, limit?: number }) {
-    return this.prisma.filmHistory.findMany({
-      include: {
-        episode: {
-          include: {
-            film: true,
-          },
+  async getHistory(query: { page?: number, limit?: number, search?: string }) {
+    const page = query.page && query.page > 0 ? +query.page : 1;
+    const limit = query.limit && query.limit > 0 ? +query.limit : 10;
+    const offset = (page - 1) * limit;
+    const where = query.search ? {
+      OR: [
+        {
+          user: {
+            name: {
+              contains: query.search
+            }
+          }
         },
+        {
+          episode: {
+            film: {
+              name: {
+                contains: query.search
+              }
+            }
+          }
+        }
+      ],
+    } : {};
+    const [filmHistories, total] = await this.prisma.$transaction([
+      this.prisma.filmHistory.findMany({
+        where,
+        include: {
+          episode: {
+            include: {
+              film: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              role: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { created_at: 'desc' },
+        skip: offset,
+        take: limit,
+      }),
+      this.prisma.filmHistory.count({
+        where
+      }),
+    ])
+
+    return {
+      data: filmHistories,
+      meta: {
+        total,
+        page,
+        last_page: Math.ceil(total / limit),
       },
-      orderBy: { created_at: 'desc' },
-      skip: ((query.page && query.page > 0 ? query.page : 1) - 1) * (query.limit && query.limit > 0 ? query.limit : 10),
-      take: query.limit && query.limit > 0 ? query.limit : 10,
-    });
+    };
   }
 
   async getByUser(userId, page = 1, limit = 12) {

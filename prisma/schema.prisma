@@ -32,6 +32,7 @@ model Film {
   @@map("films")
   Country Country[]
   country_film CountryFilm[] @relation(name: "film-country")
+  // @@fulltext([name, original_name, director, casts])
 }
 
 model Episode {
