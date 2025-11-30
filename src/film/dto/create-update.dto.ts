@@ -67,5 +67,6 @@ export class CreateFilmDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => EpisodeDto)
+  @IsOptional()
   episodes: EpisodeDto[];
 }

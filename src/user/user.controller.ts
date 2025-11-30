@@ -12,6 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  // cú pháp định nghĩa api lấy thông tin người dùng đang đăng nhập => /users/me
   @UseGuards(JwtAuthGuard)
   @Get('me')  
   @UseInterceptors(UserInterceptor)
@@ -22,6 +23,7 @@ export class UserController {
     return req.session.user;
   }
 
+  // cú pháp định nghĩa api lấy tất cả users => /users/all
   @Get('all')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Role(ROLE.ADMIN)
@@ -29,6 +31,7 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  // cú pháp định nghĩa api lấy danh sách users phân trang => /users?page=1&limit=12&search=abc
   @Get()
   @Role(ROLE.ADMIN)
   @UseGuards(JwtAuthGuard, RoleGuard)
@@ -36,17 +39,20 @@ export class UserController {
     return this.userService.findList(page, limit, search);
   }
 
+  // cú pháp định nghĩa api sửa thông tin người dùng => /users/:id
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Role(ROLE.ADMIN, ROLE.USER)
   @UseInterceptors(UserInterceptor)
   async update(@Body() dto: UpdateUserDto, @Param('id', ParseIntPipe) id: number, @Request() req) {
-    if(req.user.role !== ROLE.ADMIN && req.id !== req.user.id) {
-      throw new Error('You do not have permission to update this user');
-    }
+    console.log('Update User Request by:', req.user, req.id);
+    // if(req.user.role !== ROLE.ADMIN && req.id !== req.user.id) {
+    //   throw new Error('You do not have permission to update this user');
+    // }
     return this.userService.update(id, dto);
   }
 
+  // cú pháp định nghĩa api xóa người dùng => /users/:id
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RoleGuard)
   @Role(ROLE.ADMIN)

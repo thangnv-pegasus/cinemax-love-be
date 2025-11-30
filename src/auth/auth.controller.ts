@@ -8,6 +8,7 @@ import { UserInterceptor } from '@/user/interceptor/user.interceptor';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // cú pháp định nghĩa api auth/login
   @Post('login')
   async login(@Body() dto: LoginDto, @Req() req: Request) {
     const user = await this.authService.validateUser(dto.email, dto.password);
@@ -16,6 +17,7 @@ export class AuthController {
     return this.authService.login(user, req);
   }
 
+  // cú pháp định nghĩa api đăng ký tài khoản /auth/register
   @Post('register')
   @UseInterceptors(UserInterceptor)
   async register(@Body() dto: RegisterDto) {
@@ -29,6 +31,7 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  // cú pháp định nghĩa api đăng xuất /auth/logout
   @Post('logout')
   async logout(@Req() req: any) {
     req.session.destroy((err) => {   

@@ -1,4 +1,4 @@
-import { MegaService } from '@/mega/mega.service';
+// import { MegaService } from '@/mega/mega.service';
 import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { CreateFilmDto } from './dto/create-update.dto';
@@ -7,16 +7,120 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout } from 'rxjs';
 import { FILM_TYPE } from '@/common/constants/film';
 import { Prisma } from '@prisma/client';
+import { SupabaseService } from '@/supabase/supabase.service';
 
 @Injectable()
 export class FilmService {
-  constructor(private prisma: PrismaService, private mega: MegaService, private readonly httpService: HttpService,) { }
+  private supabaseService = new SupabaseService()
+  constructor(
+    private prisma: PrismaService,
+    // private mega: MegaService,
+    private readonly httpService: HttpService,
 
-  async uploadFilmVideo(buffer: Buffer, filename: string, folderNamme = 'films'): Promise<string> {
-    return this.mega.uploadFile(buffer, filename, folderNamme);
-  }
+  ) { }
 
-  async create(
+  // async uploadFilmVideo(buffer: Buffer, filename: string, folderNamme = 'films'): Promise<string> {
+  //   return this.mega.uploadFile(buffer, filename, folderNamme);
+  // }
+
+  // async create(
+  //   data: CreateFilmDto,
+  //   files: {
+  //     thumbnail?: Express.Multer.File[];
+  //     poster?: Express.Multer.File[];
+  //     episodes?: Express.Multer.File[];
+  //   }
+  // ) {
+  //   const film = await this.prisma.$transaction(async (prisma) => {
+  //     // ✅ Thumbnail
+  //     const thumbnail_url =
+  //       files.thumbnail && files.thumbnail[0]?.buffer
+  //         ? await this.mega.uploadFile(
+  //           files.thumbnail[0].buffer,
+  //           files.thumbnail[0].originalname,
+  //           'thumbnails'
+  //         ).then(res => res)
+  //         : typeof data.thumbnail === 'string' && data.thumbnail.trim() !== ''
+  //           ? data.thumbnail
+  //           : null;
+
+  //     // ✅ Poster
+  //     const poster_url =
+  //       files.poster && files.poster[0]?.buffer
+  //         ? await this.mega.uploadFile(
+  //           files.poster[0].buffer,
+  //           files.poster[0].originalname,
+  //           'posters'
+  //         )
+  //         : typeof data.poster === 'string' && data.poster.trim() !== ''
+  //           ? data.poster
+  //           : null;
+
+  //     // ✅ Episodes
+  //     const uploadedEpisodeUrls = await Promise.all(
+  //       (files.episodes || []).map(async (file) => {
+  //         const url = await this.mega.uploadFile(file.buffer, file.originalname, 'films/episodes');
+  //         return url;
+  //       })
+  //     );
+
+  //     const finalEpisodeUrls = [
+  //       ...(data.episodes?.filter((ep) => ep.source_type === 'url').map((ep) => ep.source) || []),
+  //       ...uploadedEpisodeUrls,
+  //     ];
+
+  //     // ✅ Tạo film
+  //     const film = await prisma.film.create({
+  //       data: {
+  //         name: data.name,
+  //         description: data.description,
+  //         slug: await this.generateSlug(data.name),
+  //         poster_url,
+  //         thumb_url: thumbnail_url,
+  //         original_name: data.original_name,
+  //         time: data.time,
+  //         total_episodes: finalEpisodeUrls.length,
+  //         quality: data.quality,
+  //         director: data.director,
+  //         casts: data.casts,
+  //         type: data.type,
+  //       },
+  //     });
+
+  //     // ✅ Quan hệ country
+  //     await prisma.countryFilm.create({
+  //       data: {
+  //         film_id: film.id,
+  //         country_id: Number(data.country_id),
+  //       },
+  //     });
+
+  //     // ✅ Quan hệ categories
+  //     await prisma.filmCategory.createMany({
+  //       data: data.category_ids.map((category_id) => ({
+  //         film_id: film.id,
+  //         category_id: Number(category_id),
+  //       })),
+  //     });
+
+  //     // ✅ Tạo tập phim
+  //     await prisma.episode.createMany({
+  //       data: finalEpisodeUrls.map((url, index) => ({
+  //         film_id: film.id,
+  //         name: `Tập ${index + 1}`,
+  //         url,
+  //       })),
+  //     });
+
+  //     return film;
+  //   }, {
+  //     timeout: 200000
+  //   });
+
+  //   return film;
+  // }
+
+  async createWithSupabase(
     data: CreateFilmDto,
     files: {
       thumbnail?: Express.Multer.File[];
@@ -28,11 +132,9 @@ export class FilmService {
       // ✅ Thumbnail
       const thumbnail_url =
         files.thumbnail && files.thumbnail[0]?.buffer
-          ? await this.mega.uploadFile(
-            files.thumbnail[0].buffer,
-            files.thumbnail[0].originalname,
-            'thumbnails'
-          ).then(res => res)
+          ? await this.supabaseService.uploadImage(
+            files.thumbnail[0]
+          ).then(res => res.url)
           : typeof data.thumbnail === 'string' && data.thumbnail.trim() !== ''
             ? data.thumbnail
             : null;
@@ -40,11 +142,9 @@ export class FilmService {
       // ✅ Poster
       const poster_url =
         files.poster && files.poster[0]?.buffer
-          ? await this.mega.uploadFile(
-            files.poster[0].buffer,
-            files.poster[0].originalname,
-            'posters'
-          )
+          ? this.supabaseService.uploadImage(
+            files.poster[0]
+          ).then(res => res.url)
           : typeof data.poster === 'string' && data.poster.trim() !== ''
             ? data.poster
             : null;
@@ -52,7 +152,7 @@ export class FilmService {
       // ✅ Episodes
       const uploadedEpisodeUrls = await Promise.all(
         (files.episodes || []).map(async (file) => {
-          const url = await this.mega.uploadFile(file.buffer, file.originalname, 'films/episodes');
+          const url = await this.supabaseService.uploadVideo(file);
           return url;
         })
       );
@@ -68,7 +168,7 @@ export class FilmService {
           name: data.name,
           description: data.description,
           slug: await this.generateSlug(data.name),
-          poster_url,
+          poster_url: await poster_url,
           thumb_url: thumbnail_url,
           original_name: data.original_name,
           time: data.time,
@@ -113,7 +213,128 @@ export class FilmService {
     return film;
   }
 
-  async update(
+  // async update(
+  //   id: number,
+  //   data: Partial<CreateFilmDto>,
+  //   files: {
+  //     thumbnail?: Express.Multer.File[];
+  //     poster?: Express.Multer.File[];
+  //     episodes?: Express.Multer.File[];
+  //   }
+  // ) {
+  //   return this.prisma.$transaction(async (prisma) => {
+  //     const existingFilm = await prisma.film.findUnique({
+  //       where: { id },
+  //       include: { episodes: true, filmCategories: true, country_film: true },
+  //     });
+
+  //     if (!existingFilm) throw new Error('Film not found');
+
+  //     // ✅ Upload thumbnail (nếu có)
+  //     const thumbnail_url =
+  //       files?.thumbnail && files.thumbnail[0]?.buffer
+  //         ? await this.mega.uploadFile(
+  //           files.thumbnail[0].buffer,
+  //           files.thumbnail[0].originalname,
+  //           'films/thumbnails'
+  //         )
+  //         : data.thumbnail ?? existingFilm.thumb_url;
+
+  //     const poster_url =
+  //       files?.poster && files.poster[0]?.buffer
+  //         ? await this.mega.uploadFile(
+  //           files.poster[0].buffer,
+  //           files.poster[0].originalname,
+  //           'films/posters'
+  //         )
+  //         : data.poster ?? existingFilm.poster_url;
+
+  //     // ✅ Upload/tổng hợp episodes
+  //     const uploadedEpisodeUrls = await Promise.all(
+  //       (files?.episodes || []).map(async (file) => {
+  //         const url = await this.mega.uploadFile(file.buffer, file.originalname, 'films/episodes');
+  //         return url;
+  //       })
+  //     );
+
+  //     const finalEpisodeUrls = [
+  //       ...(data.episodes?.filter((ep) => ep.source_type === 'url').map((ep) => ep.source) || []),
+  //       ...uploadedEpisodeUrls,
+  //     ];
+
+  //     // ✅ Cập nhật film
+  //     const updatedFilm = await prisma.film.update({
+  //       where: { id },
+  //       data: {
+  //         name: data.name ?? existingFilm.name,
+  //         description: data.description ?? existingFilm.description,
+  //         poster_url,
+  //         thumb_url: thumbnail_url,
+  //         original_name: data.original_name ?? existingFilm.original_name,
+  //         time: data.time ?? existingFilm.time,
+  //         total_episodes: finalEpisodeUrls.length || existingFilm.total_episodes,
+  //         quality: data.quality ?? existingFilm.quality,
+  //         director: data.director ?? existingFilm.director,
+  //         casts: data.casts ?? existingFilm.casts,
+  //         type: Number(data.type) ?? existingFilm.type,
+  //       },
+  //     });
+
+  //     // ✅ Cập nhật quốc gia (nếu có)
+  //     if (data.country_id) {
+  //       await prisma.countryFilm.deleteMany({ where: { film_id: id } });
+  //       await prisma.countryFilm.create({
+  //         data: {
+  //           film_id: id,
+  //           country_id: Number(data.country_id),
+  //         },
+  //       });
+  //     }
+
+  //     // ✅ Cập nhật categories (nếu có)
+  //     if (data.category_ids?.length) {
+  //       await prisma.filmCategory.deleteMany({ where: { film_id: id } });
+  //       await prisma.filmCategory.createMany({
+  //         data: data.category_ids.map((category_id) => ({
+  //           film_id: id,
+  //           category_id: Number(category_id),
+  //         })),
+  //       });
+  //     }
+
+  //     const existingEpisodes = await prisma.episode.findMany({
+  //       where: { film_id: id },
+  //     });
+
+  //     const existingUrls = existingEpisodes.map(e => e.url);
+
+  //     // Tập cần thêm mới
+  //     const newUrls = finalEpisodeUrls.filter(url => !existingUrls.includes(url));
+
+  //     // Tập cần xóa (nếu có)
+  //     const toDelete = existingEpisodes.filter(e => !finalEpisodeUrls.includes(e.url));
+
+  //     if (toDelete.length) {
+  //       await prisma.episode.deleteMany({
+  //         where: { id: { in: toDelete.map(e => e.id) } },
+  //       });
+  //     }
+
+  //     if (newUrls.length) {
+  //       await prisma.episode.createMany({
+  //         data: newUrls.map((url, index) => ({
+  //           film_id: id,
+  //           name: `Tập ${existingEpisodes.length + index + 1}`,
+  //           url,
+  //         })),
+  //       });
+  //     }
+
+  //     return updatedFilm;
+  //   });
+  // }
+
+  async updateWithSupaBase(
     id: number,
     data: Partial<CreateFilmDto>,
     files: {
@@ -122,116 +343,116 @@ export class FilmService {
       episodes?: Express.Multer.File[];
     }
   ) {
-    return this.prisma.$transaction(async (prisma) => {
-      const existingFilm = await prisma.film.findUnique({
-        where: { id },
-        include: { episodes: true, filmCategories: true, country_film: true },
-      });
+    // return this.prisma.$transaction(async (prisma) => {
+    //   const existingFilm = await prisma.film.findUnique({
+    //     where: { id },
+    //     include: { episodes: true, filmCategories: true, country_film: true },
+    //   });
 
-      if (!existingFilm) throw new Error('Film not found');
+    //   if (!existingFilm) throw new Error('Film not found');
 
-      // ✅ Upload thumbnail (nếu có)
-      const thumbnail_url =
-        files?.thumbnail && files.thumbnail[0]?.buffer
-          ? await this.mega.uploadFile(
-            files.thumbnail[0].buffer,
-            files.thumbnail[0].originalname,
-            'films/thumbnails'
-          )
-          : data.thumbnail ?? existingFilm.thumb_url;
+    //   // ✅ Upload thumbnail (nếu có)
+    //   const thumbnail_url =
+    //     files?.thumbnail && files.thumbnail[0]?.buffer
+    //       ? await this.mega.uploadFile(
+    //         files.thumbnail[0].buffer,
+    //         files.thumbnail[0].originalname,
+    //         'films/thumbnails'
+    //       )
+    //       : data.thumbnail ?? existingFilm.thumb_url;
 
-      const poster_url =
-        files?.poster && files.poster[0]?.buffer
-          ? await this.mega.uploadFile(
-            files.poster[0].buffer,
-            files.poster[0].originalname,
-            'films/posters'
-          )
-          : data.poster ?? existingFilm.poster_url;
+    //   const poster_url =
+    //     files?.poster && files.poster[0]?.buffer
+    //       ? await this.mega.uploadFile(
+    //         files.poster[0].buffer,
+    //         files.poster[0].originalname,
+    //         'films/posters'
+    //       )
+    //       : data.poster ?? existingFilm.poster_url;
 
-      // ✅ Upload/tổng hợp episodes
-      const uploadedEpisodeUrls = await Promise.all(
-        (files?.episodes || []).map(async (file) => {
-          const url = await this.mega.uploadFile(file.buffer, file.originalname, 'films/episodes');
-          return url;
-        })
-      );
+    //   // ✅ Upload/tổng hợp episodes
+    //   const uploadedEpisodeUrls = await Promise.all(
+    //     (files?.episodes || []).map(async (file) => {
+    //       const url = await this.mega.uploadFile(file.buffer, file.originalname, 'films/episodes');
+    //       return url;
+    //     })
+    //   );
 
-      const finalEpisodeUrls = [
-        ...(data.episodes?.filter((ep) => ep.source_type === 'url').map((ep) => ep.source) || []),
-        ...uploadedEpisodeUrls,
-      ];
+    //   const finalEpisodeUrls = [
+    //     ...(data.episodes?.filter((ep) => ep.source_type === 'url').map((ep) => ep.source) || []),
+    //     ...uploadedEpisodeUrls,
+    //   ];
 
-      // ✅ Cập nhật film
-      const updatedFilm = await prisma.film.update({
-        where: { id },
-        data: {
-          name: data.name ?? existingFilm.name,
-          description: data.description ?? existingFilm.description,
-          poster_url,
-          thumb_url: thumbnail_url,
-          original_name: data.original_name ?? existingFilm.original_name,
-          time: data.time ?? existingFilm.time,
-          total_episodes: finalEpisodeUrls.length || existingFilm.total_episodes,
-          quality: data.quality ?? existingFilm.quality,
-          director: data.director ?? existingFilm.director,
-          casts: data.casts ?? existingFilm.casts,
-          type: Number(data.type) ?? existingFilm.type,
-        },
-      });
+    //   // ✅ Cập nhật film
+    //   const updatedFilm = await prisma.film.update({
+    //     where: { id },
+    //     data: {
+    //       name: data.name ?? existingFilm.name,
+    //       description: data.description ?? existingFilm.description,
+    //       poster_url,
+    //       thumb_url: thumbnail_url,
+    //       original_name: data.original_name ?? existingFilm.original_name,
+    //       time: data.time ?? existingFilm.time,
+    //       total_episodes: finalEpisodeUrls.length || existingFilm.total_episodes,
+    //       quality: data.quality ?? existingFilm.quality,
+    //       director: data.director ?? existingFilm.director,
+    //       casts: data.casts ?? existingFilm.casts,
+    //       type: Number(data.type) ?? existingFilm.type,
+    //     },
+    //   });
 
-      // ✅ Cập nhật quốc gia (nếu có)
-      if (data.country_id) {
-        await prisma.countryFilm.deleteMany({ where: { film_id: id } });
-        await prisma.countryFilm.create({
-          data: {
-            film_id: id,
-            country_id: Number(data.country_id),
-          },
-        });
-      }
+    //   // ✅ Cập nhật quốc gia (nếu có)
+    //   if (data.country_id) {
+    //     await prisma.countryFilm.deleteMany({ where: { film_id: id } });
+    //     await prisma.countryFilm.create({
+    //       data: {
+    //         film_id: id,
+    //         country_id: Number(data.country_id),
+    //       },
+    //     });
+    //   }
 
-      // ✅ Cập nhật categories (nếu có)
-      if (data.category_ids?.length) {
-        await prisma.filmCategory.deleteMany({ where: { film_id: id } });
-        await prisma.filmCategory.createMany({
-          data: data.category_ids.map((category_id) => ({
-            film_id: id,
-            category_id: Number(category_id),
-          })),
-        });
-      }
+    //   // ✅ Cập nhật categories (nếu có)
+    //   if (data.category_ids?.length) {
+    //     await prisma.filmCategory.deleteMany({ where: { film_id: id } });
+    //     await prisma.filmCategory.createMany({
+    //       data: data.category_ids.map((category_id) => ({
+    //         film_id: id,
+    //         category_id: Number(category_id),
+    //       })),
+    //     });
+    //   }
 
-      const existingEpisodes = await prisma.episode.findMany({
-        where: { film_id: id },
-      });
+    //   const existingEpisodes = await prisma.episode.findMany({
+    //     where: { film_id: id },
+    //   });
 
-      const existingUrls = existingEpisodes.map(e => e.url);
+    //   const existingUrls = existingEpisodes.map(e => e.url);
 
-      // Tập cần thêm mới
-      const newUrls = finalEpisodeUrls.filter(url => !existingUrls.includes(url));
+    //   // Tập cần thêm mới
+    //   const newUrls = finalEpisodeUrls.filter(url => !existingUrls.includes(url));
 
-      // Tập cần xóa (nếu có)
-      const toDelete = existingEpisodes.filter(e => !finalEpisodeUrls.includes(e.url));
+    //   // Tập cần xóa (nếu có)
+    //   const toDelete = existingEpisodes.filter(e => !finalEpisodeUrls.includes(e.url));
 
-      if (toDelete.length) {
-        await prisma.episode.deleteMany({
-          where: { id: { in: toDelete.map(e => e.id) } },
-        });
-      }
+    //   if (toDelete.length) {
+    //     await prisma.episode.deleteMany({
+    //       where: { id: { in: toDelete.map(e => e.id) } },
+    //     });
+    //   }
 
-      if (newUrls.length) {
-        await prisma.episode.createMany({
-          data: newUrls.map((url, index) => ({
-            film_id: id,
-            name: `Tập ${existingEpisodes.length + index + 1}`,
-            url,
-          })),
-        });
-      }
+    //   if (newUrls.length) {
+    //     await prisma.episode.createMany({
+    //       data: newUrls.map((url, index) => ({
+    //         film_id: id,
+    //         name: `Tập ${existingEpisodes.length + index + 1}`,
+    //         url,
+    //       })),
+    //     });
+    //   }
 
-      return updatedFilm;
-    });
+    //   return updatedFilm;
+    // });
   }
 
   async findById(id: number) {
@@ -334,7 +555,7 @@ export class FilmService {
     ];
     const where = {
       deleted_at: null,
-      ...(query.search ? { OR: filters } : { }),
+      ...(query.search ? { OR: filters } : {}),
     };
     const [films, total] = await this.prisma.$transaction([
       this.prisma.film.findMany({
@@ -656,6 +877,56 @@ export class FilmService {
 
     return slug;
   }
+
+  // async fetchFilmByCountryAndSave(categorySlug: string, page = 1) {
+  //   const countries = await this.prisma.country.findMany({
+  //     select: {
+  //       id: true,
+  //       name: true,
+  //       slug: true,
+  //     }
+  //   });
+
+  //   for (const country of countries) {
+  //     const url = `${process.env.PHIM_NGUON_API_URL}/films/quoc-gia/${country.slug}?page=${page}`;
+  //     const { data } = await firstValueFrom(this.httpService.get(url, { timeout: 200000 }));
+
+  //     if (data.status !== 'success' || !Array.isArray(data.items)) {
+  //       throw new Error('API response invalid');
+  //     }
+
+  //     for (const item of data.items) {
+  //       const film = await this.prisma.film.findFirst({
+  //         where: {
+  //           slug: item.slug
+  //         }
+  //       })
+  //       if(film && item.slug) {
+  //         await this.prisma.countryFilm.upsert({
+  //           where: {
+  //             films: {
+  //               slug: item.slug,
+  //             },
+  //             country: {
+  //               slug: country.slug
+  //             }
+  //           },
+  //           update: {
+  //             film_id: film.id,
+  //             country_id: country.id,
+  //           },
+  //           create: {
+  //             film_id: film.id,
+  //             country_id: country.id,
+  //           }
+  //         })
+  //       }
+  //     }
+  //   }
+
+
+  //   return { message: 'Data imported successfully' };
+  // }
 
   private async getTop3CategoriesByUser(userId: number) {
     return this.prisma.$queryRawUnsafe<

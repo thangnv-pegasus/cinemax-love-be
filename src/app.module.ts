@@ -12,6 +12,7 @@ import { MegaModule } from './mega/mega.module';
 import { AuthModule } from './auth/auth.module';
 import { CommandRunnerModule } from 'nest-commander';
 import { FetchFilmsCommand } from './commands/seed-film';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [PrismaModule,
@@ -22,9 +23,10 @@ import { FetchFilmsCommand } from './commands/seed-film';
     CountryModule,
     UserModule,
     FilmHistoryModule,
-    MegaModule,
+    // MegaModule,
     AuthModule,
-    CommandRunnerModule
+    CommandRunnerModule,
+    SupabaseModule
   ],
   controllers: [],
   providers: [AppService, FetchFilmsCommand],

@@ -111,4 +111,38 @@ export class FilmHistoryService {
     });
   }
 
+  async getMonthlyStats(year?: number) {
+    if(!year)
+      year = new Date().getFullYear() || 2024;
+
+    // Lấy toàn bộ lịch sử xem trong năm
+    const histories = await this.prisma.filmHistory.findMany({
+      where: {
+        created_at: {
+          gte: new Date(`${year}-01-01T00:00:00Z`),
+          lt: new Date(`${year + 1}-01-01T00:00:00Z`),
+        },
+      },
+      select: {
+        created_at: true,
+      },
+    });
+
+    // Tạo mảng 12 tháng ban đầu = 0
+    const monthlyStats = Array(12).fill(0);
+
+    histories.forEach((h) => {
+      const month = new Date(h.created_at).getMonth(); // 0-11
+      monthlyStats[month]++;
+    });
+
+    return {
+      year,
+      data: monthlyStats.map((count, i) => ({
+        month: i + 1,
+        views: count,
+      })),
+    };
+  }
+
 }
