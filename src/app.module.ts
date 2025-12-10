@@ -13,6 +13,9 @@ import { AuthModule } from './auth/auth.module';
 import { CommandRunnerModule } from 'nest-commander';
 import { FetchFilmsCommand } from './commands/seed-film';
 import { SupabaseModule } from './supabase/supabase.module';
+import { EpisodeCommentService } from './episode-comment/episode-comment.service';
+import { EpisodeCommentModule } from './episode-comment/episode-comment.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [PrismaModule,
@@ -26,9 +29,11 @@ import { SupabaseModule } from './supabase/supabase.module';
     // MegaModule,
     AuthModule,
     CommandRunnerModule,
-    SupabaseModule
+    SupabaseModule,
+    EpisodeCommentModule,
+    WishlistModule
   ],
   controllers: [],
-  providers: [AppService, FetchFilmsCommand],
+  providers: [AppService, FetchFilmsCommand, EpisodeCommentService],
 })
 export class AppModule { }
