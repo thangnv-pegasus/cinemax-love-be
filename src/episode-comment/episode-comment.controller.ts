@@ -11,7 +11,7 @@ export class EpisodeCommentController {
 
   @Get('')
   async getComments(@Query() query: GetListCommentDto) {
-    // Implementation for fetching comments can be added here
+    return this.commentService.getComments(query);
   }
 
   @Post('')
@@ -30,5 +30,10 @@ export class EpisodeCommentController {
   @Delete(':id')
   async deleteComment(@Param('id', ParseIntPipe) id: number) {
     return this.commentService.deleteComment(id);
+  }
+
+  @Get(':episodeId')
+  async getCommentsByEpisode(@Param('episodeId', ParseIntPipe) episodeId: number, @Query() query: GetListCommentDto) {
+    return this.commentService.getCommentsByEpisode(episodeId, query);
   }
 }
