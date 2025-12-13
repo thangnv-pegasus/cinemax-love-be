@@ -62,7 +62,7 @@ export class FilmController {
     return this.filmService.findByCategorySlug(categorySlug, query);
   }
 
-  // cú pháp định nghĩa api lấy danh sách phim phân trang => /films?page=1&limit=12&search=abc
+  // cú pháp định nghĩa api lấy danh sách phim phân trang (tìm kiếm phim) => /films?page=1&limit=12&search=abc
   @Get('')
   async getAll(@Query('page', ParseIntPipe) page?: number, @Query('limit', ParseIntPipe) limit?: number, @Query('search') search?: string) {
     return this.filmService.findAll({ page, limit, search });

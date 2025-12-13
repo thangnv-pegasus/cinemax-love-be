@@ -1,15 +1,22 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
 import { WishlistService } from './wishlist.service';
 import { CreateWishlistItemDto } from './dto/create.dto';
 import { GetListWishlistDto } from './dto/list.dto';
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 
 @Controller('wishlist')
 export class WishlistController {
   constructor(private wishlistService: WishlistService) {}
 
   @Post('')
+  @UseGuards(JwtAuthGuard)
   async addToWishlist(@Body() body: CreateWishlistItemDto) {
     return this.wishlistService.addToWishlist(body.userId, body.filmId);
+  }
+  
+  @Get('films/:userId')
+  async getWishlist(@Param('userId', ParseIntPipe) userId: number, @Query() query: GetListWishlistDto) {
+    return this.wishlistService.getWishlistFilms(userId, query);
   }
 
   @Get(':userId')

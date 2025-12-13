@@ -5,21 +5,24 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { GetListCommentDto } from './dto/list.dto';
 
 @Controller('episode-comment')
-@UseGuards(JwtAuthGuard)
+
 export class EpisodeCommentController {
   constructor(private commentService: EpisodeCommentService) {}
 
   @Get('')
+  @UseGuards(JwtAuthGuard)
   async getComments(@Query() query: GetListCommentDto) {
     return this.commentService.getComments(query);
   }
 
   @Post('')
+  @UseGuards(JwtAuthGuard)
   async createComment(@Body() body: CreateCommentDto) {
     return this.commentService.createComment(body);
   } 
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   async updateComment(
     @Param('id', ParseIntPipe) id: number,
     @Body() data: Partial<CreateCommentDto>,
@@ -28,6 +31,7 @@ export class EpisodeCommentController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   async deleteComment(@Param('id', ParseIntPipe) id: number) {
     return this.commentService.deleteComment(id);
   }
