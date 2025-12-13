@@ -3,10 +3,11 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { IUserRegister } from './interface/user';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async findByEmail(email: string) {
     return this.prisma.user.findFirst({
@@ -45,14 +46,14 @@ export class UserService {
     });
   }
   async findList(page: number, limit: number, search?: string) {
-    const where = search
+    const where: Prisma.UserWhereInput = search
       ? {
-          OR: [
-            { email: { contains: search } },
-            { name: { contains: search } }
-          ],
-          deleted_at: null
-        }
+        OR: [
+          { email: { contains: search, mode: 'insensitive' }, },
+          { name: { contains: search, mode: 'insensitive' } }
+        ],
+        deleted_at: null
+      }
       : { deleted_at: null };
     const [total, items] = await Promise.all([
       this.prisma.user.count({ where }),
