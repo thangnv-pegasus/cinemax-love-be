@@ -21,7 +21,8 @@ export class FilmController {
     FileFieldsInterceptor([
       { name: 'thumbnail', maxCount: 1 },
       { name: 'poster', maxCount: 1 },
-      { name: 'episodes', maxCount: 10 },
+      // { name: 'episodes', maxCount: 10 },
+      { name: 'episodes_files', maxCount: 10 },
     ],{
       limits: {
         fileSize: 1024 * 1024 * 1024 * 100, // 100GB
@@ -31,7 +32,8 @@ export class FilmController {
   async create(@Body() body: CreateFilmDto, @UploadedFiles() files: {
     thumbnail?: Express.Multer.File[];
     poster?: Express.Multer.File[];
-    episodes?: Express.Multer.File[];
+    // episodes?: Express.Multer.File[];
+    episodes_files?: Express.Multer.File[];
   },
   ) {
     return this.filmService.createWithSupabase(body, files);
@@ -45,13 +47,15 @@ export class FilmController {
     FileFieldsInterceptor([
       { name: 'thumbnail', maxCount: 1 },
       { name: 'poster', maxCount: 1 },
-      { name: 'episodes', maxCount: 10 },
+      // { name: 'episodes', maxCount: 10 },
+      { name: 'episodes_files', maxCount: 10 },
     ]),
   )
   async updateFilm(@Param('id', ParseIntPipe) id: number, @Body() payload: Partial<CreateFilmDto>, @UploadedFiles() files: {
     thumbnail?: Express.Multer.File[];
     poster?: Express.Multer.File[];
-    episodes?: Express.Multer.File[];
+    // episodes?: Express.Multer.File[];
+    episodes_files?: Express.Multer.File[];
   }) {
     return this.filmService.updateWithSupaBase(id, payload, files);
   }

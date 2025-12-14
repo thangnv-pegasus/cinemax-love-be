@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
+      // whitelist: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
     }),);
