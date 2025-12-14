@@ -6,7 +6,7 @@ import slugify from 'slugify';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout } from 'rxjs';
 import { FILM_TYPE } from '@/common/constants/film';
-import { Prisma } from '@prisma/client';
+import { CountryFilm, Prisma } from '@prisma/client';
 import { SupabaseService } from '@/supabase/supabase.service';
 
 @Injectable()
@@ -454,7 +454,7 @@ export class FilmService {
 
         if (newUrls.length) {
           console.log('>>> running new url >>> ', newUrls);
-         
+
           const resCreateEpisode = await this.prisma.episode.createMany({
             data: newUrls.map((url, index) => ({
               film_id: id,
@@ -897,55 +897,74 @@ export class FilmService {
     return slug;
   }
 
-  // async fetchFilmByCountryAndSave(categorySlug: string, page = 1) {
-  //   const countries = await this.prisma.country.findMany({
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       slug: true,
-  //     }
-  //   });
+  async fetchFilmByCountryAndSave(page = 1) {
+    const countries = await this.prisma.country.findMany({
+      select: { id: true, name: true, slug: true },
+    });
 
-  //   for (const country of countries) {
-  //     const url = `${process.env.PHIM_NGUON_API_URL}/films/quoc-gia/${country.slug}?page=${page}`;
-  //     const { data } = await firstValueFrom(this.httpService.get(url, { timeout: 200000 }));
+    for (const country of countries) {
+      try {
+        const url = `${process.env.PHIM_NGUON_API_URL}/films/quoc-gia/${country.slug}?page=${page}`;
 
-  //     if (data.status !== 'success' || !Array.isArray(data.items)) {
-  //       throw new Error('API response invalid');
-  //     }
+        const { data } = await firstValueFrom(
+          this.httpService.get(url, { timeout: 200000 }),
+        );
 
-  //     for (const item of data.items) {
-  //       const film = await this.prisma.film.findFirst({
-  //         where: {
-  //           slug: item.slug
-  //         }
-  //       })
-  //       if(film && item.slug) {
-  //         await this.prisma.countryFilm.upsert({
-  //           where: {
-  //             films: {
-  //               slug: item.slug,
-  //             },
-  //             country: {
-  //               slug: country.slug
-  //             }
-  //           },
-  //           update: {
-  //             film_id: film.id,
-  //             country_id: country.id,
-  //           },
-  //           create: {
-  //             film_id: film.id,
-  //             country_id: country.id,
-  //           }
-  //         })
-  //       }
-  //     }
-  //   }
+        if (data.status !== 'success' || !Array.isArray(data.items)) {
+          console.warn(`⚠️ Invalid response for country: ${country.slug}`);
+          continue;
+        }
 
+        for (const item of data.items) {
+          if (!item.slug) continue;
 
-  //   return { message: 'Data imported successfully' };
-  // }
+          const film = await this.prisma.film.findFirst({
+            where: { slug: item.slug },
+            select: { id: true },
+          });
+
+          if (!film) continue;
+
+          const record = await this.prisma.countryFilm.findFirst({
+            where: {
+              film_id: film.id,
+              country_id: country.id,
+            },
+          });
+
+          if (record) {
+            await this.prisma.countryFilm.upsert({
+              where: {
+                id: record?.id || 0,
+              },
+              update: {},
+              create: {
+                film_id: film.id,
+                country_id: country.id,
+              },
+            });
+          }else {
+            await this.prisma.countryFilm.create({
+              data: {
+                film_id: film.id,
+                country_id: country.id,
+              },
+            });
+          }
+
+          console.log('>>> films >>> ', film, '>>> record >>> ', record);
+        }
+
+        console.log(`✅ Imported country: ${country.slug}`);
+      } catch (error) {
+        console.error(`❌ Failed country ${country.slug}`, error.message);
+        continue; // 👉 skip country lỗi
+      }
+    }
+
+    return { message: 'Data imported successfully' };
+  }
+
 
   private async getTop3CategoriesByUser(userId: number) {
     return this.prisma.$queryRawUnsafe<
